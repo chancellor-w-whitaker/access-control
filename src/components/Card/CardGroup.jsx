@@ -2,7 +2,6 @@ import { generateSingleElementComponent } from "../../helpers/generateSingleElem
 
 const params = {
   className: "card-group",
-  as: "div",
 };
 
 export const CardGroup = generateSingleElementComponent(params);

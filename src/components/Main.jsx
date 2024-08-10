@@ -2,7 +2,7 @@ import { generateSingleElementComponent } from "../helpers/generateSingleElement
 
 const params = {
   className: "container",
-  element: "main",
+  as: "main",
 };
 
 export const Main = generateSingleElementComponent(params);

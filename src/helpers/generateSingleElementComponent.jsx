@@ -1,47 +1,58 @@
+import { staticClassNameCustomizers } from "./staticClassNameCustomizers";
+import { combineClassNames } from "./combineClassNames";
+import { validateString } from "./validateString";
+
 export const generateSingleElementComponent = ({
+  classNameCustomizers: dynamicClassNameCustomizers = {},
   className: staticClassName = "",
-  element: defaultElement = "div",
+  as: defaultElement = "div",
   ...defaultProps
 }) => {
   const Component = ({
+    className: dynamicClassName = "",
     as = defaultElement,
-    className = "",
-    ...nonRequiredProps
+    ...dynamicProps
   }) => {
     const As = as;
 
-    const combineClassNames = ({
-      dynamic: dynamicClassName,
-      static: staticClassName,
-    }) => {
-      const validateString = (string) =>
-        typeof string === "string" && string.length > 0;
+    const classNames = { dynamic: dynamicClassName, static: staticClassName };
 
-      return typeof dynamicClassName === "function"
-        ? dynamicClassName(
-            validateString(staticClassName) ? staticClassName : ""
-          )
-        : [staticClassName, dynamicClassName]
-            .filter((string) => validateString(string))
-            .join(" ");
-    };
+    const classNamesCombined = combineClassNames(classNames);
 
-    const entireClassName = combineClassNames({
-      static: staticClassName,
-      dynamic: className,
-    });
-
-    const requiredProps = Object.fromEntries(
-      Object.entries(defaultProps).filter(([key]) => !(key in nonRequiredProps))
+    const defaultedProps = Object.fromEntries(
+      Object.entries(defaultProps).filter(([key]) => !(key in dynamicProps))
     );
 
-    const allPropsMerged = {
-      className: entireClassName,
-      ...nonRequiredProps,
-      ...requiredProps,
+    const classNameCustomizers = {
+      ...staticClassNameCustomizers,
+      ...dynamicClassNameCustomizers,
     };
 
-    return <As {...allPropsMerged} />;
+    const commonProps = Object.fromEntries(
+      Object.entries(dynamicProps).filter(
+        ([key]) => !(key in classNameCustomizers)
+      )
+    );
+
+    const propDerivedClasses = Object.entries(classNameCustomizers)
+      .filter(([propName]) => propName in dynamicProps)
+      .map(([propName, method]) =>
+        typeof method === "function" ? method(dynamicProps[propName]) : ""
+      )
+      .filter((string) => validateString(string))
+      .join(" ");
+
+    const completeClassName = [classNamesCombined, propDerivedClasses]
+      .filter((string) => validateString(string))
+      .join(" ");
+
+    const propsMerged = {
+      className: completeClassName,
+      ...defaultedProps,
+      ...commonProps,
+    };
+
+    return <As {...propsMerged} />;
   };
 
   return Component;

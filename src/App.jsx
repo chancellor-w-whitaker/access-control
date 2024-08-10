@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useResettableState } from "./hooks/useResettableState";
 import { CardBody } from "./components/Card/CardBody";
 import { usePromise } from "./hooks/usePromise";
+import { Button } from "./components/Button";
 import { Main } from "./components/Main";
 import { Card } from "./components/Card";
 import { constants } from "./constants";
@@ -58,7 +59,8 @@ export default function App() {
   const spreadsheetDataIsReady = Array.isArray(data) && data.length > 0;
 
   return (
-    <Main>
+    <Main bg="dark">
+      <Button variant="primary">Chance</Button>
       <Card className="my-3 shadow">
         <CardBody>
           <div className="overflow-auto">
@@ -95,9 +97,9 @@ const getSpreadsheetDataAndLabels = (fetchResult) => {
     }))
   );
 
-  const rowLabels = data.map(
-    (row) => row.find(({ originalKey }) => originalKey === identifierKey).value
-  );
+  // const rowLabels = data.map(
+  //   (row) => row.find(({ originalKey }) => originalKey === identifierKey).value
+  // );
 
   return { columnLabels, data };
 };

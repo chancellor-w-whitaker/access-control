@@ -2,7 +2,6 @@ import { generateSingleElementComponent } from "../../helpers/generateSingleElem
 
 const params = {
   className: "card-footer",
-  as: "div",
 };
 
 export const CardFooter = generateSingleElementComponent(params);

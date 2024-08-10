@@ -2,7 +2,6 @@ import { generateSingleElementComponent } from "../../helpers/generateSingleElem
 
 const params = {
   className: "card-img-overlay",
-  as: "div",
 };
 
 export const CardImgOverlay = generateSingleElementComponent(params);
