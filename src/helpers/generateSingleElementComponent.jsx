@@ -19,37 +19,58 @@ export const generateSingleElementComponent = ({
 
     const classNamesCombined = combineClassNames(classNames);
 
-    const defaultedProps = Object.fromEntries(
-      Object.entries(defaultProps).filter(([key]) => !(key in dynamicProps))
-    );
-
     const classNameCustomizers = {
       ...staticClassNameCustomizers,
       ...dynamicClassNameCustomizers,
     };
 
-    const commonProps = Object.fromEntries(
+    const defaultedProps = Object.fromEntries(
+      Object.entries(defaultProps).filter(([key]) => !(key in dynamicProps))
+    );
+
+    const standardDefaultedProps = Object.fromEntries(
+      Object.entries(defaultedProps).filter(
+        ([key]) => !(key in classNameCustomizers)
+      )
+    );
+
+    const standardDynamicProps = Object.fromEntries(
       Object.entries(dynamicProps).filter(
         ([key]) => !(key in classNameCustomizers)
       )
     );
 
-    const propDerivedClasses = Object.entries(classNameCustomizers)
+    const standardProps = {
+      ...standardDefaultedProps,
+      ...standardDynamicProps,
+    };
+
+    const defaultedPropBasedClasses = Object.entries(defaultedProps)
+      .filter(([propName]) => propName in classNameCustomizers)
+      .map(([propName, defaultValue]) =>
+        typeof classNameCustomizers[propName] === "function"
+          ? classNameCustomizers[propName](defaultValue)
+          : ""
+      );
+
+    const dynamicPropBasedClasses = Object.entries(classNameCustomizers)
       .filter(([propName]) => propName in dynamicProps)
       .map(([propName, method]) =>
         typeof method === "function" ? method(dynamicProps[propName]) : ""
-      )
-      .filter((string) => validateString(string))
-      .join(" ");
+      );
 
-    const completeClassName = [classNamesCombined, propDerivedClasses]
+    const propBasedClasses = [
+      ...dynamicPropBasedClasses,
+      ...defaultedPropBasedClasses,
+    ];
+
+    const completeClassName = [classNamesCombined, ...propBasedClasses]
       .filter((string) => validateString(string))
       .join(" ");
 
     const propsMerged = {
       className: completeClassName,
-      ...defaultedProps,
-      ...commonProps,
+      ...standardProps,
     };
 
     return <As {...propsMerged} />;

@@ -1,1 +1,4 @@
-export const staticClassNameCustomizers = { bg: (prop) => `bg-${prop}` };
+export const staticClassNameCustomizers = {
+  text: (prop) => `text-${prop}`,
+  bg: (prop) => `bg-${prop}`,
+};
