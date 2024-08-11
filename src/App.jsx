@@ -59,9 +59,10 @@ export default function App() {
   const spreadsheetDataIsReady = Array.isArray(data) && data.length > 0;
 
   return (
-    <Main bg="dark">
+    <Main textColor={`white`} textOpacity={75} bgColor={`dark`} bgOpacity={75}>
       <Button variant="primary">Chance</Button>
-      <Card className="my-3 shadow">
+      Did it work?
+      {/* <Card className="my-3 shadow">
         <CardBody>
           <div className="overflow-auto">
             {spreadsheetDataIsReady && (
@@ -73,7 +74,7 @@ export default function App() {
             )}
           </div>
         </CardBody>
-      </Card>
+      </Card> */}
     </Main>
   );
 }
