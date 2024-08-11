@@ -1,7 +1,8 @@
-import { generateSingleElementComponent } from "../../helpers/generateSingleElementComponent";
+import { generateSingleElementComponent } from "../../generators/component-generator";
 
 const params = {
-  className: "card-subtitle mb-2 text-body-secondary",
+  className: "card-subtitle mb-2",
+  textColor: "body-secondary",
   as: "h6",
 };
 

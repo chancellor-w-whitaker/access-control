@@ -1,4 +1,4 @@
-import { toCamelCase } from "./toCamelCase";
+import { toCamelCase } from "../helpers/toCamelCase";
 
 const roundedSizes = new Set(["circle", "pill", "0", "1", "2", "3", "4", "5"]);
 

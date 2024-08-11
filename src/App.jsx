@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useResettableState } from "./hooks/useResettableState";
 import { CardBody } from "./components/Card/CardBody";
 import { usePromise } from "./hooks/usePromise";
+import { Section } from "./components/Section";
 import { Button } from "./components/Button";
 import { Main } from "./components/Main";
 import { Card } from "./components/Card";
@@ -59,10 +60,8 @@ export default function App() {
   const spreadsheetDataIsReady = Array.isArray(data) && data.length > 0;
 
   return (
-    <Main textColor={`white`} textOpacity={75} bgColor={`dark`} bgOpacity={75}>
-      <Button variant="primary">Chance</Button>
-      Did it work?
-      {/* <Card className="my-3 shadow">
+    <Main>
+      <Card className="my-3 shadow">
         <CardBody>
           <div className="overflow-auto">
             {spreadsheetDataIsReady && (
@@ -74,7 +73,7 @@ export default function App() {
             )}
           </div>
         </CardBody>
-      </Card> */}
+      </Card>
     </Main>
   );
 }

@@ -1,4 +1,4 @@
-import { generateSingleElementComponent } from "../helpers/generateSingleElementComponent";
+import { generateSingleElementComponent } from "../generators/component-generator";
 
 const params = {
   classNameCustomizers: { variant: (prop) => `btn-${prop}` },

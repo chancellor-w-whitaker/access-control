@@ -1,6 +1,6 @@
-import { staticClassNameCustomizers } from "./staticClassNameCustomizers";
-import { combineClassNames } from "./combineClassNames";
-import { validateString } from "./validateString";
+import { staticClassNameCustomizers } from "./props/staticClassNameCustomizers";
+import { combineClassNames } from "./helpers/combineClassNames";
+import { validateString } from "./helpers/validateString";
 
 export const generateSingleElementComponent = ({
   classNameCustomizers: dynamicClassNameCustomizers = {},
