@@ -1,7 +1,19 @@
+const userIdentifier = "email";
+
 export const constants = {
-  reportsPromise: fetch("data/reports.json").then((response) =>
-    response.json()
-  ),
-  usersPromise: fetch("data/users.json").then((response) => response.json()),
-  identifierKey: "email",
+  users: {
+    promise: fetch("data/users.json").then((response) => response.json()),
+    identifier: userIdentifier,
+  },
+  reports: {
+    promise: fetch("data/reports.json").then((response) => response.json()),
+  },
+};
+
+export const isEditable = ({ colDef: { field }, data }) => {
+  return (
+    data[userIdentifier] !== "default internal" &&
+    data[userIdentifier] !== "default external" &&
+    field !== userIdentifier
+  );
 };
