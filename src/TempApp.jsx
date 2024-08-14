@@ -216,6 +216,22 @@ export default function App() {
   // turn tables object back into returnToServerData
   // turn tables object into modifiableData
 
+  /*
+  - center column headers & checkboxes
+- way to search for individual
+
+- bulk add (think about how to perform) (do last)
+
+- add/remove users
+- add/remove groups
+
+- save changes
+- revert changes
+- send back to server in original format (need a two settings for where json files gets sent, similar to api thing)
+
+- number of blocks visible > limit ? render search : !(render search)
+*/
+
   return (
     <Main>
       <Card className="my-3 shadow-sm">
