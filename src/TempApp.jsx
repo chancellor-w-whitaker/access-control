@@ -37,35 +37,6 @@ export default function App() {
 
   const [gridVisible, setGridVisible] = useState(true);
 
-  /*
-  const [rowData, setRowData] = useState();
-
-  const [initialState, setInitialState] = useState({
-    reports: null,
-    users: null,
-  });
-
-  const onGridReady = useCallback((params) => {
-    fetch("https://www.ag-grid.com/example-assets/olympic-winners.json")
-      .then((resp) => resp.json())
-      .then((data) => setRowData(data));
-  }, []);
-
-  const onGridPreDestroyed = useCallback((params) => {
-    const { state } = params;
-    console.log("Grid state on destroy (can be persisted)", state);
-    setInitialState((object) => ({ [activeGrid]: state, ...object }));
-  }, []);
-
-  const reloadGrid = useCallback(() => {
-    setGridVisible(false);
-    setTimeout(() => {
-      setRowData(undefined);
-      setGridVisible(true);
-    });
-  }, []);
-  */
-
   const users = usePromise(promises.users);
 
   const reports = usePromise(promises.reports);
@@ -218,7 +189,7 @@ export default function App() {
 
   /*
   - center column headers & checkboxes
-- way to search for individual
+    - way to search for individual
 
 - bulk add (think about how to perform) (do last)
 
