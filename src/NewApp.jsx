@@ -1,12 +1,27 @@
+import { useCallback, useState } from "react";
+import { AgGridReact } from "ag-grid-react";
+
+import { ButtonGroup } from "./components/ButtonGroup";
 import { usePromise } from "./hooks/usePromise";
+import { Section } from "./components/Section";
+import { Button } from "./components/Button";
+import { Main } from "./components/Main";
 
 const getJsonPromise = (url) => fetch(url).then((response) => response.json());
 
 const ensureIsArray = (param) => (Array.isArray(param) ? param : []);
 
 const constants = {
-  reports: { url: "data/reports.json", primaryKey: "link" },
-  users: { url: "data/users.json", primaryKey: "email" },
+  users: {
+    nonEditableIDs: ["default internal", "default external"],
+    url: "data/users.json",
+    primaryKey: "email",
+  },
+  reports: {
+    url: "data/reports.json",
+    nonEditableIDs: [],
+    primaryKey: "link",
+  },
 };
 
 const promises = {
@@ -25,8 +40,8 @@ const [usersPrimaryKey, reportsPrimaryKey] = [
 // * delete group
 // * add user to group
 // * add report to group
-// delete user from group
-// delete report from group
+// * delete user from group
+// * delete report from group
 
 // convert state back to original json format
 
@@ -131,7 +146,47 @@ const addReportToGroup = ({ reportID, groupID, state }) => {
   }
 };
 
+const deleteUserFromGroup = ({ groupID, userID, state }) => {
+  const { groups } = state;
+
+  const group = groups[groupID];
+
+  const { userIDs } = group;
+
+  if (userIDs.has(userID)) {
+    const newSet = new Set(userIDs);
+
+    newSet.delete(userID);
+
+    return {
+      ...state,
+      groups: { ...groups, [groupID]: { ...group, userIDs: newSet } },
+    };
+  }
+};
+
+const deleteReportFromGroup = ({ reportID, groupID, state }) => {
+  const { groups } = state;
+
+  const group = groups[groupID];
+
+  const { reportIDs } = group;
+
+  if (reportIDs.has(reportID)) {
+    const newSet = new Set(reportIDs);
+
+    newSet.delete(reportID);
+
+    return {
+      ...state,
+      groups: { ...groups, [groupID]: { ...group, reportIDs: newSet } },
+    };
+  }
+};
+
 export default function App() {
+  const [activeGrid, setActiveGrid] = useState("users");
+
   const fetchedUsers = usePromise(promises.users);
 
   const fetchedReports = usePromise(promises.reports);
@@ -187,7 +242,96 @@ export default function App() {
 
   const lists = getLists();
 
-  console.log(lists);
+  const getGrids = () => {
+    const reports = Object.keys(lists.reports).map((reportID) => {
+      const groupAccess = Object.fromEntries(
+        Object.entries(lists.groups).map(([groupID, { reportIDs }]) => [
+          groupID,
+          reportIDs.has(reportID),
+        ])
+      );
 
-  return <div>Hello!</div>;
+      return { [reportsPrimaryKey]: reportID, ...groupAccess };
+    });
+
+    const users = [...lists.users].map((userID) => {
+      const groupAccess = Object.fromEntries(
+        Object.entries(lists.groups).map(([groupID, { userIDs }]) => [
+          groupID,
+          userIDs.has(userID),
+        ])
+      );
+
+      return { [usersPrimaryKey]: userID, ...groupAccess };
+    });
+
+    return { reports, users };
+  };
+
+  const grids = getGrids();
+
+  const rowData = grids[activeGrid];
+
+  const firstRow =
+    Array.isArray(rowData) && rowData.length > 0 ? rowData[0] : {};
+
+  const activePrimaryKey = constants[activeGrid].primaryKey;
+
+  const editable = ({ colDef: { field }, data }) =>
+    !constants[activeGrid].nonEditableIDs.includes(data[activePrimaryKey]) &&
+    field !== activePrimaryKey;
+
+  const columnDefs = Object.keys(firstRow).map((field) => {
+    return {
+      lockPosition: field === activePrimaryKey,
+      pinned: field === activePrimaryKey,
+      editable,
+      field,
+    };
+  });
+
+  const onGridPreDestroyed = useCallback((params) => {
+    const { state } = params;
+
+    const model = params.api.getModel();
+
+    const { rowsToDisplay } = model;
+
+    const rowDataState = rowsToDisplay.map(({ data }) => data);
+
+    console.log(rowDataState);
+  }, []);
+
+  return (
+    <Main>
+      <Section>
+        <ButtonGroup>
+          <Button
+            onClick={() => setActiveGrid("users")}
+            active={activeGrid === "users"}
+            variant="primary"
+          >
+            Users
+          </Button>
+          <Button
+            onClick={() => setActiveGrid("reports")}
+            active={activeGrid === "reports"}
+            variant="primary"
+          >
+            Reports
+          </Button>
+        </ButtonGroup>
+      </Section>
+      <Section>
+        <div className="ag-theme-quartz" style={{ height: 500 }}>
+          <AgGridReact
+            onGridPreDestroyed={onGridPreDestroyed}
+            columnDefs={columnDefs}
+            rowData={rowData}
+            key={rowData}
+          ></AgGridReact>
+        </div>
+      </Section>
+    </Main>
+  );
 }
