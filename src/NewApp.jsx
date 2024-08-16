@@ -1,25 +1,22 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { AgGridReact } from "ag-grid-react";
 
+import { useResettableState } from "./hooks/useResettableState";
 import { ButtonGroup } from "./components/ButtonGroup";
 import { usePromise } from "./hooks/usePromise";
 import { Section } from "./components/Section";
 import { Button } from "./components/Button";
 import { Main } from "./components/Main";
 
-const getJsonPromise = (url) => fetch(url).then((response) => response.json());
-
-const ensureIsArray = (param) => (Array.isArray(param) ? param : []);
-
 const constants = {
   users: {
-    nonEditableIDs: ["default internal", "default external"],
+    nonEditableValues: ["default internal", "default external"],
     url: "data/users.json",
     primaryKey: "email",
   },
   reports: {
     url: "data/reports.json",
-    nonEditableIDs: [],
+    nonEditableValues: [],
     primaryKey: "link",
   },
 };
@@ -45,47 +42,47 @@ const [usersPrimaryKey, reportsPrimaryKey] = [
 
 // convert state back to original json format
 
-const addUser = ({ state, id }) => {
+const addUser = ({ userID, state }) => {
   const { users } = state;
 
-  if (!users.has(id)) {
+  if (!users.has(userID)) {
     const newSet = new Set(users);
 
-    newSet.add(id);
+    newSet.add(userID);
 
     return { ...state, users: newSet };
   }
 };
 
-const addGroup = ({ state, id }) => {
+const addGroup = ({ groupID, state }) => {
   const { groups } = state;
 
-  if (!(id in groups)) {
+  if (!(groupID in groups)) {
     const newObject = {
       ...groups,
-      [id]: { reportIDs: new Set(), userIDs: new Set() },
+      [groupID]: { reportIDs: new Set(), userIDs: new Set() },
     };
 
     return { ...state, groups: newObject };
   }
 };
 
-const deleteUser = ({ state, id }) => {
+const deleteUser = ({ userID, state }) => {
   const { groups, users } = state;
 
-  if (users.has(id)) {
+  if (users.has(userID)) {
     const newSetA = new Set(users);
 
-    newSetA.delete(id);
+    newSetA.delete(userID);
 
     const newObject = Object.fromEntries(
       Object.entries(groups).map(([group, sets]) => {
         const { userIDs } = sets;
 
-        if (userIDs.has(id)) {
+        if (userIDs.has(userID)) {
           const newSetB = new Set(userIDs);
 
-          newSetB.delete(id);
+          newSetB.delete(userID);
 
           return [group, { ...sets, userIDs: newSetB }];
         }
@@ -98,11 +95,11 @@ const deleteUser = ({ state, id }) => {
   }
 };
 
-const deleteGroup = ({ state, id }) => {
+const deleteGroup = ({ groupID, state }) => {
   const { groups } = state;
 
-  if (id in groups) {
-    const { [id]: deletedGroup, ...newObject } = groups;
+  if (groupID in groups) {
+    const { [groupID]: deletedGroup, ...newObject } = groups;
 
     return { ...state, groups: newObject };
   }
@@ -185,114 +182,47 @@ const deleteReportFromGroup = ({ reportID, groupID, state }) => {
 };
 
 export default function App() {
-  const [activeGrid, setActiveGrid] = useState("users");
+  const [dataset, setDataset] = useState("users");
 
-  const fetchedUsers = usePromise(promises.users);
+  const usersFetched = usePromise(promises.users);
 
-  const fetchedReports = usePromise(promises.reports);
+  const reportsFetched = usePromise(promises.reports);
 
-  const [users, reports] = [
-    ensureIsArray(fetchedUsers),
-    ensureIsArray(fetchedReports),
-  ];
+  const initialState = useMemo(() => {
+    const users = ensureIsArray(usersFetched);
 
-  const getLists = () => {
-    const lists = { users: new Set(), reports: {}, groups: {} };
+    const reports = ensureIsArray(reportsFetched);
 
-    const {
-      reports: reportsLookup,
-      groups: groupsTable,
-      users: usersSet,
-    } = lists;
+    const lists = getLists({ reports, users });
 
-    // fill users & userIDs in groups
-    users.forEach(({ [usersPrimaryKey]: userID, ...groupData }) => {
-      usersSet.add(userID);
+    return getGrids(lists);
+  }, [usersFetched, reportsFetched]);
 
-      Object.entries(groupData).forEach(([group, access]) => {
-        if (!(group in groupsTable)) {
-          groupsTable[group] = { reportIDs: new Set(), userIDs: new Set() };
-        }
+  const [state, setState] = useResettableState(initialState);
 
-        const set = groupsTable[group].userIDs;
+  const rowData = state[dataset];
 
-        if (access) set.add(userID);
-      });
-    });
+  const getColumnDefs = () => {
+    const rowData = state[dataset];
 
-    // fill reports & reportIDs in groups
-    reports.forEach(({ groups = [], ...report }) => {
-      const reportID = report[reportsPrimaryKey];
+    const row = Array.isArray(rowData) && rowData.length > 0 ? rowData[0] : {};
 
-      reportsLookup[reportID] = report;
+    const { nonEditableValues, primaryKey } = constants[dataset];
 
-      groups.forEach((group) => {
-        if (!(group in groupsTable)) {
-          groupsTable[group] = { reportIDs: new Set(), userIDs: new Set() };
-        }
+    const editable = ({ colDef: { field }, data }) =>
+      !nonEditableValues.includes(data[primaryKey]) && field !== primaryKey;
 
-        const set = groupsTable[group].reportIDs;
-
-        set.add(reportID);
-      });
-    });
-
-    return lists;
-  };
-
-  const lists = getLists();
-
-  const getGrids = () => {
-    const reports = Object.keys(lists.reports).map((reportID) => {
-      const groupAccess = Object.fromEntries(
-        Object.entries(lists.groups).map(([groupID, { reportIDs }]) => [
-          groupID,
-          reportIDs.has(reportID),
-        ])
-      );
-
-      return { [reportsPrimaryKey]: reportID, ...groupAccess };
-    });
-
-    const users = [...lists.users].map((userID) => {
-      const groupAccess = Object.fromEntries(
-        Object.entries(lists.groups).map(([groupID, { userIDs }]) => [
-          groupID,
-          userIDs.has(userID),
-        ])
-      );
-
-      return { [usersPrimaryKey]: userID, ...groupAccess };
-    });
-
-    return { reports, users };
-  };
-
-  const grids = getGrids();
-
-  const rowData = grids[activeGrid];
-
-  const firstRow =
-    Array.isArray(rowData) && rowData.length > 0 ? rowData[0] : {};
-
-  const activePrimaryKey = constants[activeGrid].primaryKey;
-
-  const editable = ({ colDef: { field }, data }) =>
-    !constants[activeGrid].nonEditableIDs.includes(data[activePrimaryKey]) &&
-    field !== activePrimaryKey;
-
-  const columnDefs = Object.keys(firstRow).map((field) => {
-    return {
-      lockPosition: field === activePrimaryKey,
-      pinned: field === activePrimaryKey,
+    return Object.keys(row).map((field) => ({
+      lockPosition: field === primaryKey,
+      pinned: field === primaryKey,
       editable,
       field,
-    };
-  });
+    }));
+  };
+
+  const columnDefs = getColumnDefs();
 
   const onGridPreDestroyed = useCallback((params) => {
-    const { state } = params;
-
     const model = params.api.getModel();
 
     const { rowsToDisplay } = model;
@@ -307,15 +237,15 @@ export default function App() {
       <Section>
         <ButtonGroup>
           <Button
-            onClick={() => setActiveGrid("users")}
-            active={activeGrid === "users"}
+            onClick={() => setDataset("users")}
+            active={dataset === "users"}
             variant="primary"
           >
             Users
           </Button>
           <Button
-            onClick={() => setActiveGrid("reports")}
-            active={activeGrid === "reports"}
+            onClick={() => setDataset("reports")}
+            active={dataset === "reports"}
             variant="primary"
           >
             Reports
@@ -335,3 +265,77 @@ export default function App() {
     </Main>
   );
 }
+
+const getLists = ({ reports, users }) => {
+  const lists = { users: new Set(), reports: {}, groups: {} };
+
+  const {
+    reports: reportsLookup,
+    groups: groupsTable,
+    users: usersSet,
+  } = lists;
+
+  // fill users & userIDs in groups
+  users.forEach(({ [usersPrimaryKey]: userID, ...groupData }) => {
+    usersSet.add(userID);
+
+    Object.entries(groupData).forEach(([group, access]) => {
+      if (!(group in groupsTable)) {
+        groupsTable[group] = { reportIDs: new Set(), userIDs: new Set() };
+      }
+
+      const set = groupsTable[group].userIDs;
+
+      if (access) set.add(userID);
+    });
+  });
+
+  // fill reports & reportIDs in groups
+  reports.forEach(({ groups = [], ...report }) => {
+    const reportID = report[reportsPrimaryKey];
+
+    reportsLookup[reportID] = report;
+
+    groups.forEach((group) => {
+      if (!(group in groupsTable)) {
+        groupsTable[group] = { reportIDs: new Set(), userIDs: new Set() };
+      }
+
+      const set = groupsTable[group].reportIDs;
+
+      set.add(reportID);
+    });
+  });
+
+  return lists;
+};
+
+const getGrids = (lists) => {
+  const reports = Object.keys(lists.reports).map((reportID) => {
+    const groupAccess = Object.fromEntries(
+      Object.entries(lists.groups).map(([groupID, { reportIDs }]) => [
+        groupID,
+        reportIDs.has(reportID),
+      ])
+    );
+
+    return { [reportsPrimaryKey]: reportID, ...groupAccess };
+  });
+
+  const users = [...lists.users].map((userID) => {
+    const groupAccess = Object.fromEntries(
+      Object.entries(lists.groups).map(([groupID, { userIDs }]) => [
+        groupID,
+        userIDs.has(userID),
+      ])
+    );
+
+    return { [usersPrimaryKey]: userID, ...groupAccess };
+  });
+
+  return { reports, users };
+};
+
+const getJsonPromise = (url) => fetch(url).then((response) => response.json());
+
+const ensureIsArray = (param) => (Array.isArray(param) ? param : []);
